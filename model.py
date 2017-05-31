@@ -34,14 +34,14 @@ class mann(object):
 
 			W_xh = tf.get_variable('W_xh', shape=(self.input_size + self.nb_class, 4*self.controller_size), initializer=tf.contrib.layers.xavier_initializer())
 			W_hh = tf.get_variable('W_hh', shape=(self.controller_size, 4*self.controller_size), initializer=tf.contrib.layers.xavier_initializer())
-			b_h = tf.get_variable('b_h', shape=(4*self.controller_size, 1), initializer=tf.constant_initializer(0))
+			b_h = tf.get_variable('b_h', shape=(4*self.controller_size), initializer=tf.constant_initializer(0))
 
 			W_o = tf.get_variable('W_o', shape=(self.controller_size + self.nb_reads * self.memory_size[1], self.nb_class), initializer=tf.contrib.layers.xavier_initializer())
 			b_o = tf.get_variable('b_o', shape=(self.nb_class), initializer=tf.constant_initializer(0))
 
 			gamma = 0.95
 
-		return M_0, c_0, h_0, r_0, wr_0, wu_0
+		return [M_0, c_0, h_0, r_0, wr_0, wu_0]
 
 	def step(self, (M_tm1, c_tm1, h_tm1, r_tm1, wr_tm1, wu_tm1), (x_t)):
 
@@ -54,10 +54,12 @@ class mann(object):
 
 			W_xh = tf.get_variable('W_xh', shape=(self.input_size + self.nb_class, 4*self.controller_size))
 			W_hh = tf.get_variable('W_hh', shape=(self.controller_size, 4*self.controller_size))
-			b_h = tf.get_variable('b_h', shape=(4*self.controller_size, 1))
+			b_h = tf.get_variable('b_h', shape=(4*self.controller_size))
 
 			W_o = tf.get_variable('W_o', shape=(self.controller_size + self.nb_reads * self.memory_size[1], self.nb_class))
 			b_o = tf.get_variable('b_o', shape=(self.nb_class))
+
+			gamma = 0.95
 
 		def lstm_step(size, x_t, c_tm1, h_tm1, W_xh, W_hh, b_h):
 
@@ -71,9 +73,9 @@ class mann(object):
 			c_t = gf*c_tm1 + gi*u
 			h_t = go*tf.tanh(c_t)
 
-			return c_t, h_t
+			return [c_t, h_t]
 
-		c_t, h_t = lstm_step(self.controller_size, x_t, c_tm1, h_tm1, W_xh, W_hh, b_h)
+		[c_t, h_t] = lstm_step(self.controller_size, x_t, c_tm1, h_tm1, W_xh, W_hh, b_h)
 
 		shape_key = (self.batch_size, self.nb_reads, self.memory_size[1])
 		shape_sigma = (self.batch_size, self.nb_reads, 1)
@@ -89,8 +91,8 @@ class mann(object):
 		wlu_tm1 = tf.slice(indices, [0,self.memory_size[0] - self.nb_reads], [self.batch_size,self.nb_reads])
 		wlu_tm1 = tf.cast(wlu_tm1, dtype=tf.int32)
 
-		row_idx = tf.reshape(tf.tile(tf.reshape(wlu_tm1[:,0], shape=(-1, 1)), shape=(1, self.memory_size[1])), [-1])
-		row_idx += self.memory_size[0] * tf.reshape(tf.tile(tf.reshape(range(self.batch_size), shape=(-1, 1)), shape=(1, self.memory_size[1])), [-1])
+		row_idx = tf.reshape(tf.tile(tf.reshape(wlu_tm1[:,0], shape=(-1, 1)), (1, self.memory_size[1])), [-1])
+		row_idx += self.memory_size[0] * tf.reshape(tf.tile(tf.reshape(range(self.batch_size), shape=(-1, 1)), (1, self.memory_size[1])), [-1])
 		col_idx = tf.tile(range(self.memory_size[1]), [self.batch_size])
 		coords = tf.transpose(tf.stack([row_idx, col_idx]))
 		binary_mask = tf.cast(tf.sparse_to_dense(coords, (self.batch_size*self.memory_size[0], self.memory_size[1]), 1), tf.bool)
@@ -107,27 +109,43 @@ class mann(object):
 
 		wu_t = gamma*wu_tm1 + tf.reduce_sum(wr_t, axis=1)+ tf.reduce_sum(ww_t, axis=1)
 
-		r_t = tf.reshape(tf.matmul(wr_t, M_t), shape=(batch_size,-1))
+		r_t = tf.reshape(tf.matmul(wr_t, M_t), shape=(self.batch_size,-1))
 
-		return M_t, c_t, h_t, r_t, wr_t, wu_t
+		return [M_t, c_t, h_t, r_t, wr_t, wu_t]
 
 	def compute_output(self, input_var, target_var):
 
 		[M_0, c_0, h_0, r_0, wr_0, wu_0] = self.initialize()
 
+		with tf.variable_scope('weights', reuse=True):
+			W_key = tf.get_variable('W_key', shape=(self.nb_reads, self.controller_size, self.memory_size[1]))
+			b_key = tf.get_variable('b_key', shape=(self.nb_reads, self.memory_size[1]))
+
+			W_sigma = tf.get_variable('W_sigma', shape=(self.nb_reads, self.controller_size, 1))
+			b_sigma = tf.get_variable('b_sigma', shape=(self.nb_reads, 1))
+
+			W_xh = tf.get_variable('W_xh', shape=(self.input_size + self.nb_class, 4*self.controller_size))
+			W_hh = tf.get_variable('W_hh', shape=(self.controller_size, 4*self.controller_size))
+			b_h = tf.get_variable('b_h', shape=(4*self.controller_size))
+
+			W_o = tf.get_variable('W_o', shape=(self.controller_size + self.nb_reads * self.memory_size[1], self.nb_class))
+			b_o = tf.get_variable('b_o', shape=(self.nb_class))
+
+			gamma = 0.95
+
 		sequence_length = input_var.get_shape().as_list()[1]
 
-	    one_hot_target = tf.one_hot(target_var, self.nb_class, axis=-1)
-	    offset_target_var = tf.concat([tf.zeros_like(tf.expand_dims(one_hot_target[:,0], 1)), one_hot_target[:,:-1]], axis=1)
-	    ntm_input = tf.concat([input_var, offset_target_var], axis=2)
+		one_hot_target = tf.one_hot(target_var, self.nb_class, axis=-1)
+		offset_target_var = tf.concat([tf.zeros_like(tf.expand_dims(one_hot_target[:,0], 1)), one_hot_target[:,:-1]], axis=1)
+		ntm_input = tf.concat([input_var, offset_target_var], axis=2)
 
-	    ntm_var = tf.scan(step, elems=tf.transpose(ntm_input, perm=[1,0,2]), initializer=[M_0, c_0, h_0, r_0, wr_0, wu_0])
-	    ntm_output = tf.transpose(tf.concat(ntm_var[2:4], axis=2), perm=[1,0,2])
+		ntm_var = tf.scan(self.step, elems=tf.transpose(ntm_input, perm=[1,0,2]), initializer=[M_0, c_0, h_0, r_0, wr_0, wu_0])
+		ntm_output = tf.transpose(tf.concat(ntm_var[2:4], axis=2), perm=[1,0,2])
 
-	    output_var = tf.matmul(ntm_output, W_o) + b_o
-	    output_var = tf.nn.softmax(output_var)
+		output_var = tf.matmul(tf.reshape(ntm_output, shape=(self.batch_size*sequence_length, -1)), W_o) + b_o
+		output_var = tf.reshape(output_var, shape=(self.batch_size, sequence_length, -1))
+		output_var = tf.nn.softmax(output_var)
 
-	    params = [W_key, b_key, W_sigma, b_sigma, W_xh, W_hh, b_h, W_o, b_o]
+		params = [W_key, b_key, W_sigma, b_sigma, W_xh, W_hh, b_h, W_o, b_o]
 
-	    return output_var, params
-			
+		return output_var, params
