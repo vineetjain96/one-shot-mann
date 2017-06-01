@@ -1,13 +1,13 @@
 import numpy as np
 import tensorflow as tf
 
-from utils import variable_float32, variable_one_hot, cosine_similarity
+from utils.tf_utils import variable_float32, variable_one_hot
+from utils.similarities import cosine_similarity
 
 class mann(object):
 
 	def __init__(self, input_size=20*20, memory_size=(128, 40), \
 		controller_size=200, nb_reads=4, nb_class=5, batch_size=16):
-
 		self.input_size = input_size
 		self.memory_size = memory_size
 		self.controller_size = controller_size
@@ -16,7 +16,6 @@ class mann(object):
 		self.batch_size = batch_size
 
 	def initialize(self):
-
 		M_0 = variable_float32(1e-6 * np.ones((self.batch_size,) + self.memory_size), name='memory')
 		c_0 = variable_float32(np.zeros((self.batch_size, self.controller_size)), name='controller_cell_state')
 		h_0 = variable_float32(np.zeros((self.batch_size, self.controller_size)), name='controller_hidden_state')
@@ -24,27 +23,9 @@ class mann(object):
 		wr_0 = variable_one_hot((self.batch_size, self.nb_reads, self.memory_size[0]), name='wr')
 		wu_0 = variable_one_hot((self.batch_size, self.memory_size[0]), name='wu')
 
-		with tf.variable_scope('weights'):
-
-			W_key = tf.get_variable('W_key', shape=(self.nb_reads, self.controller_size, self.memory_size[1]), initializer=tf.contrib.layers.xavier_initializer())
-			b_key = tf.get_variable('b_key', shape=(self.nb_reads, self.memory_size[1]), initializer=tf.constant_initializer(0))
-
-			W_sigma = tf.get_variable('W_sigma', shape=(self.nb_reads, self.controller_size, 1), initializer=tf.contrib.layers.xavier_initializer())
-			b_sigma = tf.get_variable('b_sigma', shape=(self.nb_reads, 1), initializer=tf.constant_initializer(0))
-
-			W_xh = tf.get_variable('W_xh', shape=(self.input_size + self.nb_class, 4*self.controller_size), initializer=tf.contrib.layers.xavier_initializer())
-			W_hh = tf.get_variable('W_hh', shape=(self.controller_size, 4*self.controller_size), initializer=tf.contrib.layers.xavier_initializer())
-			b_h = tf.get_variable('b_h', shape=(4*self.controller_size), initializer=tf.constant_initializer(0))
-
-			W_o = tf.get_variable('W_o', shape=(self.controller_size + self.nb_reads * self.memory_size[1], self.nb_class), initializer=tf.contrib.layers.xavier_initializer())
-			b_o = tf.get_variable('b_o', shape=(self.nb_class), initializer=tf.constant_initializer(0))
-
-			gamma = 0.95
-
 		return [M_0, c_0, h_0, r_0, wr_0, wu_0]
 
 	def step(self, (M_tm1, c_tm1, h_tm1, r_tm1, wr_tm1, wu_tm1), (x_t)):
-
 		with tf.variable_scope('weights', reuse=True):
 			W_key = tf.get_variable('W_key', shape=(self.nb_reads, self.controller_size, self.memory_size[1]))
 			b_key = tf.get_variable('b_key', shape=(self.nb_reads, self.memory_size[1]))
@@ -100,7 +81,6 @@ class mann(object):
 		M_t = tf.where(binary_mask, tf.constant(0., shape=(self.batch_size*self.memory_size[0], self.memory_size[1])), tf.reshape(M_tm1, shape=(self.batch_size*self.memory_size[0], self.memory_size[1])))
 		M_t = tf.reshape(M_t, shape=(self.batch_size, self.memory_size[0], self.memory_size[1]))
 
-
 		wlu_tm1 = tf.one_hot(wlu_tm1, self.memory_size[0], axis=-1)
 		ww_t = tf.multiply(sigma_t, wr_tm1) + tf.multiply(1.-sigma_t, wlu_tm1)
 
@@ -108,16 +88,14 @@ class mann(object):
 		wr_t = tf.nn.softmax(K_t)
 
 		wu_t = gamma*wu_tm1 + tf.reduce_sum(wr_t, axis=1)+ tf.reduce_sum(ww_t, axis=1)
-
 		r_t = tf.reshape(tf.matmul(wr_t, M_t), shape=(self.batch_size,-1))
 
 		return [M_t, c_t, h_t, r_t, wr_t, wu_t]
 
 	def compute_output(self, input_var, target_var):
-
 		[M_0, c_0, h_0, r_0, wr_0, wu_0] = self.initialize()
 
-		with tf.variable_scope('weights', reuse=True):
+		with tf.variable_scope('weights'):
 			W_key = tf.get_variable('W_key', shape=(self.nb_reads, self.controller_size, self.memory_size[1]))
 			b_key = tf.get_variable('b_key', shape=(self.nb_reads, self.memory_size[1]))
 
