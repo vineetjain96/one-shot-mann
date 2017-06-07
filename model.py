@@ -7,12 +7,12 @@ from utils.similarities import cosine_similarity
 class mann(object):
 
 	def __init__(self, input_size=20*20, memory_size=(128, 40), \
-		controller_size=200, nb_reads=4, nb_class=5, batch_size=16):
+		controller_size=200, nb_reads=4, nb_classes=5, batch_size=16):
 		self.input_size = input_size
 		self.memory_size = memory_size
 		self.controller_size = controller_size
 		self.nb_reads = nb_reads
-		self.nb_class = nb_class
+		self.nb_classes = nb_classes
 		self.batch_size = batch_size
 
 	def initialize(self):
@@ -33,12 +33,12 @@ class mann(object):
 			W_sigma = tf.get_variable('W_sigma', shape=(self.nb_reads, self.controller_size, 1))
 			b_sigma = tf.get_variable('b_sigma', shape=(self.nb_reads, 1))
 
-			W_xh = tf.get_variable('W_xh', shape=(self.input_size + self.nb_class, 4*self.controller_size))
+			W_xh = tf.get_variable('W_xh', shape=(self.input_size + self.nb_classes, 4*self.controller_size))
 			W_hh = tf.get_variable('W_hh', shape=(self.controller_size, 4*self.controller_size))
 			b_h = tf.get_variable('b_h', shape=(4*self.controller_size))
 
-			W_o = tf.get_variable('W_o', shape=(self.controller_size + self.nb_reads * self.memory_size[1], self.nb_class))
-			b_o = tf.get_variable('b_o', shape=(self.nb_class))
+			W_o = tf.get_variable('W_o', shape=(self.controller_size + self.nb_reads * self.memory_size[1], self.nb_classes))
+			b_o = tf.get_variable('b_o', shape=(self.nb_classes))
 
 			gamma = 0.95
 
@@ -102,18 +102,18 @@ class mann(object):
 			W_sigma = tf.get_variable('W_sigma', shape=(self.nb_reads, self.controller_size, 1))
 			b_sigma = tf.get_variable('b_sigma', shape=(self.nb_reads, 1))
 
-			W_xh = tf.get_variable('W_xh', shape=(self.input_size + self.nb_class, 4*self.controller_size))
+			W_xh = tf.get_variable('W_xh', shape=(self.input_size + self.nb_classes, 4*self.controller_size))
 			W_hh = tf.get_variable('W_hh', shape=(self.controller_size, 4*self.controller_size))
 			b_h = tf.get_variable('b_h', shape=(4*self.controller_size))
 
-			W_o = tf.get_variable('W_o', shape=(self.controller_size + self.nb_reads * self.memory_size[1], self.nb_class))
-			b_o = tf.get_variable('b_o', shape=(self.nb_class))
+			W_o = tf.get_variable('W_o', shape=(self.controller_size + self.nb_reads * self.memory_size[1], self.nb_classes))
+			b_o = tf.get_variable('b_o', shape=(self.nb_classes))
 
 			gamma = 0.95
 
 		sequence_length = input_var.get_shape().as_list()[1]
 
-		one_hot_target = tf.one_hot(target_var, self.nb_class, axis=-1)
+		one_hot_target = tf.one_hot(target_var, self.nb_classes, axis=-1)
 		offset_target_var = tf.concat([tf.zeros_like(tf.expand_dims(one_hot_target[:,0], 1)), one_hot_target[:,:-1]], axis=1)
 		ntm_input = tf.concat([input_var, offset_target_var], axis=2)
 
