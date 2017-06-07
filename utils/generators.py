@@ -34,4 +34,4 @@ class OmniglotGenerator(object):
 	    	 				for (filename, angle, shift) in zip(image_files, angles, shifts)], dtype=np.float32)
 			episode_output[i] = np.asarray(labels, dtype=np.int32)
 
-			return episode_input, episode_output
+		return episode_input, episode_output
