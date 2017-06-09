@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
-from model import mann
-from utils.generators import OmniglotGenerator
+from mann.model import mann
+from mann.utils.generators import OmniglotGenerator
 from matplotlib import pyplot as plt
 
 def omniglot():
@@ -70,7 +70,7 @@ def omniglot():
 				if i % (max_iter*1e-3) == 0:
 					cost_val = sess.run(cost, feed_dict=feed_dict)
 					acc_val = sess.run(acc, feed_dict=feed_dict)
-					
+
 					iters.append(i)
 					costs.append(cost_val)
 					accuracies.append(acc_val)
