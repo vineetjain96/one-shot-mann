@@ -15,8 +15,8 @@ class OmniglotGenerator(object):
 		self.max_shift = max_shift
 		self.img_size = img_size
 		self.character_folders = [os.path.join(data_folder, alphabet, character) for alphabet in os.listdir(data_folder) \
-     						if os.path.isdir(os.path.join(data_folder, alphabet)) \
-     						for character in os.listdir(os.path.join(data_folder, alphabet))]
+         						if os.path.isdir(os.path.join(data_folder, alphabet)) \
+         						for character in os.listdir(os.path.join(data_folder, alphabet))]
 	
 	def episode(self):
 		episode_input = np.zeros((self.batch_size, self.nb_samples, np.prod(self.img_size)), dtype=np.float32)
@@ -31,7 +31,7 @@ class OmniglotGenerator(object):
 			shifts = np.random.randint(-self.max_shift, self.max_shift + 1, size=(sequence_length, 2))
 
 			episode_input[i] = np.asarray([transform_image(filename, angle=angle, s=shift, size=self.img_size).flatten() \
-	    	 				for (filename, angle, shift) in zip(image_files, angles, shifts)], dtype=np.float32)
+	        	 				for (filename, angle, shift) in zip(image_files, angles, shifts)], dtype=np.float32)
 			episode_output[i] = np.asarray(labels, dtype=np.int32)
 
 		return episode_input, episode_output
