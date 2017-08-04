@@ -18,18 +18,24 @@ In order to run the Omniglot experiment, download the dataset from [here](https:
 
 ## Running
 `python omniglot.py`
+
 Run `python omniglot.py --help` to see a list of available options
+
 
 `--num-classes` and `--num-samples` specify how to form an episode of input data from the omniglot dataset.
 
+
 `--controller-size` specifies the number of hidden units in the LSTM controller network.
+
 `--memory-locations` specifies the number of memory locations contained in the external memory.
+
 `--memory-word-size` specifies the size of each word stored in external memory.
+
 
 `--learning-rate` and `--iterations` specify the parameters for training the model.
 
-The default values for all parameters are those used in the paper.
 
+The default values for all parameters are those used in the paper.
 
 ## Paper
 Adam Santoro, Sergey Bartunov, Matthew Botvinick, Daan Wierstra, Timothy Lillicrap, *One-shot Learning with Memory-Augmented Neural Networks*, [[arXiv](http://arxiv.org/abs/1605.06065)]
