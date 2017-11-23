@@ -84,6 +84,8 @@ class mann(object):
 		wlu_tm1 = tf.one_hot(wlu_tm1, self.memory_size[0], axis=-1)
 		ww_t = tf.multiply(sigma_t, wr_tm1) + tf.multiply(1.-sigma_t, wlu_tm1)
 
+		M_t = M_t + tf.matmul(tf.transpose(ww_t, perm=[0,2,1]), k_t)
+		
 		K_t = cosine_similarity(k_t, M_t)
 		wr_t = tf.nn.softmax(K_t)
 

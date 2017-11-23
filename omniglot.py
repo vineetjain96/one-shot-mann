@@ -144,6 +144,15 @@ def omniglot():
 					print 'Episode ' + str(i) + ': Cost = ' + str(cost_val) + '\t Accuracy = ' + str(acc_val)
 					print ''
 
+					with open('omniglot-cost', 'wb') as fp:
+						pickle.dump(costs, fp)
+
+					with open('omniglot-acc', 'wb') as fp:
+						pickle.dump(accuracies, fp)
+
+					with open('omniglot-iters', 'wb') as fp:
+						pickle.dump(iters, fp)
+
 		except KeyboardInterrupt:
 			print '\nInterrupted at Episode ' + str(i)
 			print 'Cost = ' + str(cost_val)
