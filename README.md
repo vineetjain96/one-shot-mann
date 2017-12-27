@@ -1,5 +1,6 @@
 # One-shot Learning with Memory-Augmented Neural Networks
 Tensorflow implementation of the paper *One-shot Learning with Memory-Augmented Neural Networks*, by A. Santoro et al.
+This is an offshoot of a [larger project](https://github.com/adityagilra/archibrain), which aims to synthesize bio-plausible neural networks that solve cognitive tasks.
 
 This implementation is much simpler than a lot of others out there, thanks to TensorFlow's API and ease of use. The model as described in the paper has been followed as closely as possible.
 
